@@ -65,6 +65,17 @@ class CheckHttp < Sensu::Plugin::Check::CLI
          long: '--request-uri PATH',
          description: 'Specify a uri path'
 
+  option :post_method,
+         short: '-o',
+         long: '--post-method',
+         boolean: true,
+         default: false,
+         description: 'Use POST instead of GET'
+
+  option :post_body_file,
+         long: '--post-body-file /path/file',
+         description: 'File with optional request body to pass in POST'
+
   option :header,
          short: '-H HEADER',
          long: '--header HEADER',
@@ -224,7 +235,15 @@ class CheckHttp < Sensu::Plugin::Check::CLI
       end
     end
 
-    req = Net::HTTP::Get.new(config[:request_uri], 'User-Agent' => config[:ua])
+    if config[:post_method]
+      req = Net::HTTP::Post.new(config[:request_uri], 'User-Agent' => config[:ua])
+      if config[:post_body_file]
+        post_body = IO.readlines(config[:post_body_file])
+        req.body = post_body.join
+      end
+    else
+      req = Net::HTTP::Get.new(config[:request_uri], 'User-Agent' => config[:ua])
+    end
 
     if !config[:user].nil? && !config[:password].nil?
       req.basic_auth config[:user], config[:password]
